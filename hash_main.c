@@ -6,12 +6,40 @@
 /*   By: vperez-f <vperez-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/07 17:18:57 by vperez-f          #+#    #+#             */
-/*   Updated: 2024/05/08 18:34:48 by vperez-f         ###   ########.fr       */
+/*   Updated: 2024/05/08 20:10:51 by vperez-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "hash.h"
 
+void	print_top(t_dict *dict)
+{
+	int	i;
+	int	j;
+	int	max;
+	int	top_count;
+
+	i = 0;
+	j = 0;
+	max = 100;
+	top_count = 10;
+	printf("|-----------------------------------------------|\n");
+	printf("    		    TOP %i\n", top_count);
+	while(i < top_count && max > 0)
+	{
+		j = 0;
+		while (j < dict->cap && i < top_count)
+		{
+			if (dict->entries[j].key && (dict->entries[j].value) == max)
+			{
+				printf("        (%03i) | %-12s -----> %02i\n", j, dict->entries[j].key, dict->entries[j].value);
+				i++;	
+			}
+			j++;
+		}
+		max--;
+	}
+}
 void	print_dict(t_dict *dict)
 {
 	int	i;
@@ -26,14 +54,25 @@ void	print_dict(t_dict *dict)
 	{
 		if (dict->entries[j].key)
 		{
-			printf("        (%i) | %-11s -----> %i\n", j, dict->entries[j].key, dict->entries[j].value);
+			printf("        (%03i) | %-12s -----> %i\n", j, dict->entries[j].key, dict->entries[j].value);
 			i++;
 		}
 		j++;
 	}
 	printf("|====================[---]======================|\n");
 }
+char *ft_tolower_str(char *s)
+{
+	int i;
 
+	i = 0;
+	while (s && s[i])
+	{
+		s[i] = ft_tolower(s[i]);
+		i++;
+	}
+	return (s);
+}
 unsigned int	hash(char *word)
 {
 	unsigned int res;
@@ -45,7 +84,7 @@ unsigned int	hash(char *word)
 	while (word[i])
 	{
 		c = word[i];
-		res += res * 7 + c; 
+		res += res * 13 + c; 
 		i++;
 	}
 	return res;	
@@ -58,7 +97,7 @@ t_entry	create_entry(char *word)
 	ntry.value = 1;
 	return (ntry);
 }
-void	add_word(char *word, t_dict *dict)
+void	add_word(char *word, t_dict *dict, int *col_num)
 {
 	int		i;
 	int		hash_index;
@@ -71,6 +110,7 @@ void	add_word(char *word, t_dict *dict)
 		if ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word) - 1))
 		{
 			printf(" !! Collisao on hash_index: %i\n", hash_index);
+			*col_num = *col_num + 1; //pq col_num++ no va? lo sabremos en el nuevo capitulo de Eralonso
 			while ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word) - 1))
 				hash_index++;
 			printf(" !! New index after collisao: %i\n", hash_index);
@@ -91,8 +131,7 @@ void	add_word(char *word, t_dict *dict)
 	}
 	printf("---------------------------------------------------\n");
 }
-
-void	proces_line(char *line, t_dict *dict)
+void	proces_line(char *line, t_dict *dict, int *col_num)
 {
 	char	**list_words;
 	int		i;
@@ -108,13 +147,14 @@ void	proces_line(char *line, t_dict *dict)
 			list_words[i][ft_strlen(list_words[i]) - 1] = '\0';	
 		if (!ft_isalpha(list_words[i][ft_strlen(list_words[i]) - 1]))
 			list_words[i][ft_strlen(list_words[i]) - 1] = '\0';
+		list_words[i] = ft_tolower_str(list_words[i]);
 		i++;
 	}
 	i = 0;
 	while (list_words[i])
 	{
 		printf("Word: %s\n", list_words[i]);
-		add_word((list_words[i]), dict);
+		add_word((list_words[i]), dict, col_num);
 		i++;
 	}
 	free(list_words);
@@ -123,21 +163,27 @@ void	proces_line(char *line, t_dict *dict)
 int main(int argc, char **argv)
 {
 	int     fd;
+	int		*col_num;
 	char    *line;
 	char    *word;
 	t_dict	*dict;
 
 	fd = open(argv[1], O_RDONLY);
+	col_num = (int *)malloc(sizeof(int) * 1);
+	*col_num = 0;
 	dict = (t_dict *)malloc(sizeof(t_dict) * 1);
-	dict->cap = 100;
+	dict->cap = 200;
 	dict->entries = (t_entry *)malloc(sizeof(t_entry) * dict->cap);
 	dict->current = 0;
 	print_dict(dict);
 	while ((line = get_next_line(fd)))
 	{
 		//printf("NEW line ------ %s\n", line);
-		proces_line(line, dict);
+		if (line[0] != '\n')
+			proces_line(line, dict, col_num);
 	}
 	print_dict(dict);
+	printf("         Final number of collisions: %03i\n", *col_num);
+	print_top(dict);
 }
 // cc hash_main.c hash.h libft/libft.a get_next_line/get_next_line.c get_next_line/get_next_line_utils.c
