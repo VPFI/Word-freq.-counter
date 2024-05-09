@@ -6,7 +6,7 @@
 /*   By: vperez-f <vperez-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/07 17:18:57 by vperez-f          #+#    #+#             */
-/*   Updated: 2024/05/08 20:10:51 by vperez-f         ###   ########.fr       */
+/*   Updated: 2024/05/09 19:09:21 by vperez-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,16 +104,16 @@ void	add_word(char *word, t_dict *dict, int *col_num)
 
 	i = 0;
 	hash_index = hash(word) % dict->cap;
-	printf("hash: %i --- hash_index: %i\n", hash(word), hash_index);
+	//printf("hash: %i --- hash_index: %i\n", hash(word), hash_index);
 	if ((dict->current) > 0)
 	{
-		if ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word) - 1))
+		if ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word)))
 		{
-			printf(" !! Collisao on hash_index: %i\n", hash_index);
+			//printf(" !! Collisao on hash_index: %i\n", hash_index);
 			*col_num = *col_num + 1; //pq col_num++ no va? lo sabremos en el nuevo capitulo de Eralonso
-			while ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word) - 1))
+			while ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word)))
 				hash_index++;
-			printf(" !! New index after collisao: %i\n", hash_index);
+			//printf(" !! New index after collisao: %i\n", hash_index);
 			
 		}
 		if (!(dict->entries[hash_index].key))
@@ -129,7 +129,7 @@ void	add_word(char *word, t_dict *dict, int *col_num)
 		dict->entries[hash_index] = create_entry(word);
 		dict->current++;
 	}
-	printf("---------------------------------------------------\n");
+	//printf("---------------------------------------------------\n");
 }
 void	proces_line(char *line, t_dict *dict, int *col_num)
 {
@@ -153,7 +153,7 @@ void	proces_line(char *line, t_dict *dict, int *col_num)
 	i = 0;
 	while (list_words[i])
 	{
-		printf("Word: %s\n", list_words[i]);
+		//printf("Word: %s\n", list_words[i]);
 		add_word((list_words[i]), dict, col_num);
 		i++;
 	}
@@ -175,7 +175,6 @@ int main(int argc, char **argv)
 	dict->cap = 200;
 	dict->entries = (t_entry *)malloc(sizeof(t_entry) * dict->cap);
 	dict->current = 0;
-	print_dict(dict);
 	while ((line = get_next_line(fd)))
 	{
 		//printf("NEW line ------ %s\n", line);
@@ -184,6 +183,7 @@ int main(int argc, char **argv)
 	}
 	print_dict(dict);
 	printf("         Final number of collisions: %03i\n", *col_num);
+	printf("      	     Number of words: %03i\n", dict->current);
 	print_top(dict);
 }
 // cc hash_main.c hash.h libft/libft.a get_next_line/get_next_line.c get_next_line/get_next_line_utils.c
