@@ -6,25 +6,28 @@
 /*   By: vperez-f <vperez-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/07 17:18:57 by vperez-f          #+#    #+#             */
-/*   Updated: 2024/05/09 19:09:21 by vperez-f         ###   ########.fr       */
+/*   Updated: 2024/05/10 19:42:09 by vperez-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "hash.h"
 
-void	print_top(t_dict *dict)
+void    print_top(t_dict *dict, int top_count, int col_num)
 {
-	int	i;
-	int	j;
-	int	max;
-	int	top_count;
+	int i;
+	int j;
+	int max;
 
 	i = 0;
 	j = 0;
-	max = 100;
-	top_count = 10;
-	printf("|-----------------------------------------------|\n");
-	printf("    		    TOP %i\n", top_count);
+	max = 5000;
+	printf("\n");
+	printf("|====================[-++-]======================|\n");
+	printf("    Entry cap --> %i || %i <-- Current words\n", dict->cap, dict->current);
+	printf("          Final number of collisions: %03i\n", col_num);
+	printf("|------------------------------------------------|\n");
+	printf("                     TOP %i\n", top_count);
+	printf("|------------------------------------------------|\n");
 	while(i < top_count && max > 0)
 	{
 		j = 0;
@@ -32,29 +35,62 @@ void	print_top(t_dict *dict)
 		{
 			if (dict->entries[j].key && (dict->entries[j].value) == max)
 			{
-				printf("        (%03i) | %-12s -----> %02i\n", j, dict->entries[j].key, dict->entries[j].value);
-				i++;	
+				printf("        (%04i) | %-12s -----> %02i\n", j, dict->entries[j].key, dict->entries[j].value);
+				i++;    
 			}
 			j++;
 		}
 		max--;
 	}
+	printf("|------------------------------------------------|\n");
 }
-void	print_dict(t_dict *dict)
+void    print_your_words(t_dict *dict, char **words, int argc)
 {
-	int	i;
-	int	j;
+	int i;
+	int j;
+	int	printed;
+
+	i = 0;
+	j = 0;
+	printed = 0;
+	printf(" 	   -- Selected Words Frequency -- \n");
+	printf("|##################################################|\n");
+	while(i < argc - 2)
+	{
+		j = 0;
+		printed = 0;
+		while (j < dict->cap && argc > 2)
+		{	
+			if (dict->entries[j].key && !ft_strcmp(dict->entries[j].key, words[i]))
+			{
+				printf("        (%04i) | %-12s -----> %02i\n", j, dict->entries[j].key, dict->entries[j].value);
+				printed = 1;
+				//i++;
+			}
+			j++;
+		}
+		if (!printed)
+			printf("        (%04i) | %-12s -----> %03i -Not Found- \n", 0, words[i], 0);
+		i++;
+	}
+	printf("|##################################################|\n");
+}
+void    print_dict(t_dict *dict, int col_num)
+{
+	int i;
+	int j;
 
 	i = 0;
 	j = 0;
 	printf("|====================[-+-]======================|\n");
 	printf("     Entry cap --> %i | %i <-- Current words\n", dict->cap, dict->current);
+	printf("         Final number of collisions: %03i\n", col_num);
 	printf("|-----------------------------------------------|\n");
 	while(i < dict->current)
 	{
 		if (dict->entries[j].key)
 		{
-			printf("        (%03i) | %-12s -----> %i\n", j, dict->entries[j].key, dict->entries[j].value);
+			printf("        (%04i) | %-12s -----> %02i\n", j, dict->entries[j].key, dict->entries[j].value);
 			i++;
 		}
 		j++;
@@ -73,11 +109,12 @@ char *ft_tolower_str(char *s)
 	}
 	return (s);
 }
-unsigned int	hash(char *word)
+
+unsigned int    hash(char *word)
 {
 	unsigned int res;
-	int		i;
-	char	c;
+	int     i;
+	char    c;
 
 	res = 0;
 	i = 0;
@@ -87,55 +124,117 @@ unsigned int	hash(char *word)
 		res += res * 13 + c; 
 		i++;
 	}
-	return res;	
+	return res; 
 }
-t_entry	create_entry(char *word)
+t_entry create_entry(char *word, int freq)
 {
-	t_entry	ntry;
+	t_entry ntry;
 
 	ntry.key = ft_strdup(word);
-	ntry.value = 1;
+	ntry.value = freq;
 	return (ntry);
 }
-void	add_word(char *word, t_dict *dict, int *col_num)
+void    re_addword(t_entry *temp, char *word, int freq, int cap, int *col_num)
 {
-	int		i;
-	int		hash_index;
+	int     hash_index;
+
+	hash_index = hash(word) % cap;
+	//printf("hash: %i --- hash_index: %i\n", hash(word), hash_index);
+	if ((temp[hash_index].key) && ft_strcmp((temp[hash_index].key), word))
+	{
+		//printf(" !! Collisao on hash_index: %i\n", hash_index);
+		*col_num = *col_num + 1; //pq col_num++ no va? lo sabremos en el nuevo capitulo de Eralonso
+		while ((temp[hash_index].key) && ft_strcmp((temp[hash_index].key), word))
+			hash_index++;
+		//printf(" !! New index after collisao: %i\n", hash_index);
+	}
+	if (!(temp[hash_index].key))
+	{
+		temp[hash_index] = create_entry(word, freq);
+	}
+}
+void    free_entries(t_entry *entries, int n)
+{
+	int i;
+	int	j;
 
 	i = 0;
+	j = 0;
+	while (i < n) //entries[i].key --> t_entry *entries
+	{
+		if (entries[j].key)
+		{
+			free(entries[j].key);
+			i++;
+		}
+		j++;
+	}
+	free(entries);
+}
+void    expand_dict(t_dict *dict, int *col_num)
+{
+	t_entry *temp;
+	int     i;
+	int     j;
+	int     hash_index;
+
+	i = 0;
+	j = 0;
+	dict->cap = dict->cap * 2;
+	temp =  (t_entry *)malloc(sizeof(t_entry) * dict->cap);
+	while (i < dict->current)
+	{
+		if (dict->entries[j].key)
+		{
+			re_addword(temp, dict->entries[j].key, dict->entries[j].value, dict->cap, col_num);
+			i++;
+			//printf("Word from dict: %s --> %i\n", dict->entries[j].key, dict->entries[j].value);
+		}
+		j++;
+	}
+	free_entries(dict->entries, dict->current);
+	dict->entries = temp;
+	//free(temp);
+}
+void    add_word(char *word, t_dict *dict, int *col_num)
+{
+	int     hash_index;
+
 	hash_index = hash(word) % dict->cap;
 	//printf("hash: %i --- hash_index: %i\n", hash(word), hash_index);
 	if ((dict->current) > 0)
 	{
-		if ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word)))
+		if ((dict->entries[hash_index].key) && ft_strcmp((dict->entries[hash_index].key), word))
 		{
 			//printf(" !! Collisao on hash_index: %i\n", hash_index);
 			*col_num = *col_num + 1; //pq col_num++ no va? lo sabremos en el nuevo capitulo de Eralonso
-			while ((dict->entries[hash_index].key) && ft_strncmp((dict->entries[hash_index].key), word, ft_strlen(word)))
+			while ((dict->entries[hash_index].key) && ft_strcmp((dict->entries[hash_index].key), word))
 				hash_index++;
 			//printf(" !! New index after collisao: %i\n", hash_index);
 			
 		}
 		if (!(dict->entries[hash_index].key))
 		{
-			dict->entries[hash_index] = create_entry(word);
+			dict->entries[hash_index] = create_entry(word, 1);
 			dict->current++;
+			if (dict->current == (dict->cap * 3 / 4))
+				expand_dict(dict, col_num);
 		}
 		else
 			dict->entries[hash_index].value++;
 	}
 	else
 	{
-		dict->entries[hash_index] = create_entry(word);
+		dict->entries[hash_index] = create_entry(word, 1);
 		dict->current++;
 	}
 	//printf("---------------------------------------------------\n");
 }
-void	proces_line(char *line, t_dict *dict, int *col_num)
+void    proces_line(char *line, t_dict *dict, int *col_num)
 {
-	char	**list_words;
-	int		i;
-	int		j;
+	char    **list_words;
+	int     i;
+	int     j;
 
 	i = 0;
 	j = 0;
@@ -144,7 +243,7 @@ void	proces_line(char *line, t_dict *dict, int *col_num)
 	while (list_words[i])
 	{
 		if ((list_words[i][ft_strlen(list_words[i]) - 1]) == '\n')
-			list_words[i][ft_strlen(list_words[i]) - 1] = '\0';	
+			list_words[i][ft_strlen(list_words[i]) - 1] = '\0'; 
 		if (!ft_isalpha(list_words[i][ft_strlen(list_words[i]) - 1]))
 			list_words[i][ft_strlen(list_words[i]) - 1] = '\0';
 		list_words[i] = ft_tolower_str(list_words[i]);
@@ -153,21 +252,29 @@ void	proces_line(char *line, t_dict *dict, int *col_num)
 	i = 0;
 	while (list_words[i])
 	{
-		//printf("Word: %s\n", list_words[i]);
-		add_word((list_words[i]), dict, col_num);
+		//printf("Word: %s first C: %i\n", list_words[i], ft_isalpha(list_words[i][0]));
+		if (ft_isalpha(list_words[i][0]))
+			add_word((list_words[i]), dict, col_num);
+		free(list_words[i]);
 		i++;
 	}
+	free(list_words[i]);
 	free(list_words);
 }
 
 int main(int argc, char **argv)
 {
 	int     fd;
-	int		*col_num;
+	int     *col_num;
 	char    *line;
 	char    *word;
-	t_dict	*dict;
+	t_dict  *dict;
 
+	if (argc < 2)
+	{
+		printf("Invalid arguments: remember --> text.file words_to_find...\n");
+		return (1);
+	}
 	fd = open(argv[1], O_RDONLY);
 	col_num = (int *)malloc(sizeof(int) * 1);
 	*col_num = 0;
@@ -177,13 +284,16 @@ int main(int argc, char **argv)
 	dict->current = 0;
 	while ((line = get_next_line(fd)))
 	{
-		//printf("NEW line ------ %s\n", line);
 		if (line[0] != '\n')
 			proces_line(line, dict, col_num);
 	}
-	print_dict(dict);
-	printf("         Final number of collisions: %03i\n", *col_num);
-	printf("      	     Number of words: %03i\n", dict->current);
-	print_top(dict);
+	//print_dict(dict, *col_num);
+	print_top(dict, 10, *col_num);
+	if (argc > 2)
+		print_your_words(dict, argv + 2, argc);
+	free(col_num);
+	free_entries(dict->entries, dict->current);
+	free(dict);
 }
 // cc hash_main.c hash.h libft/libft.a get_next_line/get_next_line.c get_next_line/get_next_line_utils.c
+// ./a.out test.txt . . . .
