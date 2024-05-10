@@ -6,7 +6,7 @@
 /*   By: vperez-f <vperez-f@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/07 17:18:57 by vperez-f          #+#    #+#             */
-/*   Updated: 2024/05/10 19:42:09 by vperez-f         ###   ########.fr       */
+/*   Updated: 2024/05/10 20:53:36 by vperez-f         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,13 +55,15 @@ void    print_your_words(t_dict *dict, char **words, int argc)
 	printed = 0;
 	printf(" 	   -- Selected Words Frequency -- \n");
 	printf("|##################################################|\n");
-	while(i < argc - 2)
+	if (!ft_isalpha(words[argc - 1][0]))
+		argc--;
+	while(i < argc)
 	{
 		j = 0;
 		printed = 0;
-		while (j < dict->cap && argc > 2)
+		while (j < dict->cap)
 		{	
-			if (dict->entries[j].key && !ft_strcmp(dict->entries[j].key, words[i]))
+			if (dict->entries[j].key && !ft_strcmp(dict->entries[j].key, ft_tolower_str(words[i])))
 			{
 				printf("        (%04i) | %-12s -----> %02i\n", j, dict->entries[j].key, dict->entries[j].value);
 				printed = 1;
@@ -272,14 +274,14 @@ int main(int argc, char **argv)
 
 	if (argc < 2)
 	{
-		printf("Invalid arguments: remember --> text.file words_to_find...\n");
+		printf("Invalid arguments: remember --> text.file + Optional(words_to_find) + top_count\n");
 		return (1);
 	}
 	fd = open(argv[1], O_RDONLY);
 	col_num = (int *)malloc(sizeof(int) * 1);
 	*col_num = 0;
 	dict = (t_dict *)malloc(sizeof(t_dict) * 1);
-	dict->cap = 200;
+	dict->cap = 100;
 	dict->entries = (t_entry *)malloc(sizeof(t_entry) * dict->cap);
 	dict->current = 0;
 	while ((line = get_next_line(fd)))
@@ -288,9 +290,12 @@ int main(int argc, char **argv)
 			proces_line(line, dict, col_num);
 	}
 	//print_dict(dict, *col_num);
-	print_top(dict, 10, *col_num);
-	if (argc > 2)
-		print_your_words(dict, argv + 2, argc);
+	if (ft_atoi(argv[argc - 1]))
+		print_top(dict, ft_atoi(argv[argc - 1]), *col_num);
+	else
+		print_top(dict, 10, *col_num);
+	if (argc > 3)
+		print_your_words(dict, argv + 2, argc - 2);
 	free(col_num);
 	free_entries(dict->entries, dict->current);
 	free(dict);
